@@ -1,0 +1,59 @@
+name: Build Pip-Boy Firmware
+
+# Runs on every push to main, and can be triggered manually from the
+# Actions tab. Compiles the PlatformIO project on GitHub's servers
+# (no local toolchain needed) and publishes the three flashable .bin
+# files as a downloadable artifact, ready to drop into webflasher/firmware/.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'include/**'
+      - 'platformio.ini'
+      - '.github/workflows/build.yml'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      # First run fetches TFT_eSPI so the ESP32-C5 patch files below have
+      # somewhere to land. Expected to fail here — see README section 3.
+      - name: Pre-fetch dependencies (expected to fail before patching)
+        run: pio run -e nm-cyd-c5 || true
+
+      - name: Patch TFT_eSPI for ESP32-C5
+        run: |
+          git clone --depth 1 https://github.com/RockBase-iot/NM-CYD-C5.git /tmp/vendor
+          LIBDIR=".pio/libdeps/nm-cyd-c5/TFT_eSPI"
+          cp /tmp/vendor/Demos/Arduino/libraries/TFT_eSPI/Processors/TFT_eSPI_ESP32_C5.* "$LIBDIR/Processors/"
+          cp /tmp/vendor/Demos/Arduino/libraries/TFT_eSPI/TFT_eSPI.h   "$LIBDIR/TFT_eSPI.h"
+          cp /tmp/vendor/Demos/Arduino/libraries/TFT_eSPI/TFT_eSPI.cpp "$LIBDIR/TFT_eSPI.cpp"
+
+      - name: Build firmware
+        run: pio run -e nm-cyd-c5
+
+      - name: Stage flashable binaries
+        run: |
+          mkdir -p webflasher/firmware
+          cp .pio/build/nm-cyd-c5/bootloader.bin webflasher/firmware/
+          cp .pio/build/nm-cyd-c5/partitions.bin webflasher/firmware/
+          cp .pio/build/nm-cyd-c5/firmware.bin   webflasher/firmware/
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipboy-firmware
+          path: webflasher/firmware/
