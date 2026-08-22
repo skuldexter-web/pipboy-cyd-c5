@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  Pip-Boy UI — Web Serial flasher (ESP Web Tools)
+  Serve this file + manifest.json + the /firmware .bin files over HTTPS
+  (or http://localhost) — Web Serial requires a secure context and only
+  works in Chromium-based browsers (Chrome, Edge, Opera). Firefox/Safari
+  are not supported by the Web Serial API as of this writing.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PIP-OS // RobCo Web Flasher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    :root { --phosphor: #00FF66; --bg: #000; }
+    body {
+      background: var(--bg);
+      color: var(--phosphor);
+      font-family: 'Courier New', monospace;
+      max-width: 640px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.5;
+    }
+    .frame {
+      border: 1px solid var(--phosphor);
+      padding: 24px;
+      position: relative;
+    }
+    .frame::before, .frame::after {
+      content: "";
+      position: absolute;
+      width: 12px; height: 12px;
+      border: 2px solid var(--phosphor);
+    }
+    .frame::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+    .frame::after  { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+    h1 { letter-spacing: 2px; text-shadow: 0 0 6px var(--phosphor); }
+    .dim { color: #0a5; }
+    esp-web-install-button {
+      display: block;
+      margin-top: 24px;
+    }
+    button[slot="activate"] {
+      background: var(--bg);
+      color: var(--phosphor);
+      border: 1px solid var(--phosphor);
+      font-family: inherit;
+      font-size: 16px;
+      padding: 12px 20px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button[slot="activate"]:hover { background: #051; }
+    ul { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <h1>ROBCO INDUSTRIES (TM) TERMLINK</h1>
+    <p class="dim">PIP-OS FIRMWARE INSTALLER — NM-CYD-C5</p>
+
+    <p>
+      Connect the NM-CYD-C5 via its <strong>ESP32-C5 programming USB-C port</strong>
+      (the board has two USB-C ports — use the one wired to the C5, not the
+      CH340 UART-only port), then press the button below.
+    </p>
+
+    <esp-web-install-button manifest="./manifest.json">
+      <button slot="activate">⚡ CONNECT &amp; FLASH PIP-OS</button>
+      <span slot="unsupported">
+        Your browser does not support Web Serial. Use Chrome, Edge, or Opera.
+      </span>
+      <span slot="not-allowed">
+        Web Serial is blocked here — this page must be served over HTTPS
+        (or http://localhost).
+      </span>
+    </esp-web-install-button>
+
+    <ul>
+      <li>If no device appears in the browser's port picker, install the
+        CH340/USB-CDC driver for your OS and reconnect.</li>
+      <li>Hold BOOT while tapping RESET first if the board doesn't enter
+        download mode automatically (older esptool auto-reset timing can be
+        flaky on some ESP32-C5 boards).</li>
+      <li>Flashing erases the whole app partition; SD card contents are untouched.</li>
+    </ul>
+  </div>
+</body>
+</html>
